@@ -1,0 +1,16 @@
+# Go build files
+*.exe
+*.out
+*.test
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific
+.vscode/
+.idea/
+
+# Go modules cache
+bin/
+pkg/
