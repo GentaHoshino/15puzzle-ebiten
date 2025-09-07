@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"math/rand"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text" // textパッケージをインポート
@@ -36,20 +38,40 @@ func (g *game) initBoard() {
 		g.board[y] = make([]int, g.w)
 	}
 
-	nums := make([]int, g.w*g.h)
-	for i := 0; i < g.w*g.h-1; i++ {
-		nums[i] = i + 1
-	}
-	nums[g.w*g.h-1] = 0
+	// 1...15, 最後が0
 
-	idx := 0
+	num := 1
+
 	for y := 0; y < g.h; y++ {
 		for x := 0; x < g.w; x++ {
-			g.board[y][x] = nums[idx]
-			idx++
+			if y == g.h-1 && x == g.w-1 {
+				g.board[y][x] = 0
+			} else {
+				g.board[y][x] = num
+				num++
+			}
+
 		}
 	}
 	g.emptyX, g.emptyY = g.w-1, g.h-1
+}
+
+// JS の処理をGo化：空白(右下)は固定、0..(w*h-2) から2つ選んで swap を n 回
+func (g *game) shuffle(n int) {
+	max := g.w*g.h - 1 // 右下のインデックスは除外
+	for i := 0; i < n; i++ {
+		var from, to int
+		for from == to {
+			from = rand.Intn(max)
+			to = rand.Intn(max)
+		}
+
+		// 一次元index→（x,y）
+		fx, fy := from%g.w, from/g.w
+		tx, ty := to%g.w, to/g.w
+
+		g.board[fy][fx], g.board[ty][tx] = g.board[ty][tx], g.board[fy][fx]
+	}
 }
 
 func (g *game) Update() error {
@@ -102,10 +124,12 @@ func (g *game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano()) // ★ 追加:ランダム化
 	ebiten.SetWindowTitle("15パズル")
 	// ★修正点2: ウィンドウサイズとnewGameの引数を定数に合わせる
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
 	g := newGame(BoardWidth, BoardHeight)
+	g.shuffle(10000)
 	if err := ebiten.RunGame(g); err != nil {
 		panic(err)
 	}
